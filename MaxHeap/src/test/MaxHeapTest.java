@@ -13,7 +13,7 @@ public class MaxHeapTest {
 	
 	@BeforeEach
 	public void setUp() throws Exception {
-		heap = new MaxHeap<Integer>();
+		heap = new MaxHeap<Integer>(10);
 	}
 
 	@Test
@@ -65,5 +65,28 @@ public class MaxHeapTest {
 		
 		assertEquals(14, heap.extractMax());
 		assertEquals(1, heap.size());        
+	}
+	
+	@Test
+	public void testIterator() {		
+        // heap structure
+        //               15
+        //         12          11
+        //      8      9     7		
+		heap.insert(15);		
+        heap.insert(12);
+        heap.insert(11);
+        heap.insert(8);
+        heap.insert(9);
+        heap.insert(7);
+
+		var expected = new int[] {15,12,11,8,9,7};
+
+        var ptr = 0;
+		for (var value : heap) {			
+			assertEquals(expected[ptr++], value);
+		}
+		
+		assertEquals(6, ptr);
 	}
 }

@@ -1,22 +1,26 @@
 package main;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * This file contains an implementation of a max-heap. A max-heap is a complete binary
  * tree (that is, totally filled other than the rightmost elements on the last 
- * level) where the value in each node is greater than or equal to the values in the children of that node. The root, therefore,
- * has the maximum value in the tree.
+ * level) where the value in each node is greater than or equal to the values in the children of that node.
+ * The root, therefore, has the maximum value in the tree.
  * @author Jalal Choker, jalal.choker@gmail.com
  */
-public class MaxHeap<T extends Comparable<T>> 
+public class MaxHeap<T extends Comparable<T>> implements Iterable<T>
 {
 	private final ArrayList<T> heap;
 	private int index; // points to the last entry in the heap
+	private int capacity;
 	
-	public MaxHeap() {
-		this.heap = new ArrayList<T>();
-		this.index=-1;
+	public MaxHeap(int capacity) {
+		if(capacity < 2) throw new IllegalArgumentException("Illegal Capacity: " + capacity);
+		this.capacity = capacity;
+		this.heap = new ArrayList<T>(capacity);
+		this.index = -1;
 	}
 	
     public boolean isEmpty() {
@@ -29,87 +33,62 @@ public class MaxHeap<T extends Comparable<T>>
     
     // inserts a value at the end of the list and bubbles up if necessary; T = O(logN)
     public void insert(T value) {
-    	if(value == null) throw new IllegalArgumentException("value cannot be null");
     	
+    	if(value == null) throw new IllegalArgumentException("Value cannot be null");
+    	if(this.size() == this.capacity) throw new IllegalStateException("Heap is full");
+
     	heap.add(value);
     	index++;
-    	heapify();
+    	bubbleUp(index);
     }
     
-    // bubbles up a newly inserted item into the heap
-    private void heapify() {
-        if (this.size() > 1) // has > 1 element
-        {
-            var cIdx = index;
-            var crnt = heap.get(cIdx); // the newly inserted value
-
-            var pIdx = parentIndex(cIdx);
-            var prnt = heap.get(pIdx); // its parent
-
-            while (prnt.compareTo(crnt) < 0) // need to swap current & parent i.e bubble up
-            {
-                swap(cIdx, pIdx);
-
-                if (pIdx == 0) break; // reached root
-
-                cIdx = pIdx;
-                pIdx = parentIndex(cIdx);
-                prnt = heap.get(pIdx); 
-            }
-        }
+    // bubbles up a value at a specified index
+    private void bubbleUp(int pos) {
+    	
+    	var currentIdx = pos;
+    	var parentIdx = parentIndex(currentIdx);
+    			
+    	while(currentIdx > 0 && heap.get(parentIdx).compareTo(heap.get(currentIdx)) < 0)
+    	{
+            swap(currentIdx, parentIdx);
+            currentIdx = parentIdx;
+            parentIdx = parentIndex(currentIdx);            
+    	}
     }
     
-    // returns the max value in the heap which is stored in the root by removing it; T = O(logN)
+    // returns the max value in the heap which is stored at the root and removes it; T = O(logN)
     public T extractMax() {
+    	
         if (this.isEmpty()) throw new IllegalStateException("Heap is empty");
 
-        var max = heap.get(0); // save max
-
-        if (index == 0) heap.remove(index--);
-        else
-        {            
-            heap.set(0, heap.get(index)); // overwrite root with bottom-most, right-most node
-            heap.remove(index--); // remove the last entry in the heap then decrement index
-
-            // more than 2 elements left in heap then bubble down the new value stored in the root to maintain max heap property
-            if (this.size() > 1)
-            {
-                var pIdx = 0;
-                var lIdx = leftChildIndex(pIdx);
-                var rIdx = rightChildIndex(pIdx);
-
-                var prnt = heap.get(pIdx);
-                var left = getValueOrNull(lIdx);
-                var right = getValueOrNull(rIdx);
-
-                while ((lIdx <= this.index && prnt.compareTo(left) < 0) || (rIdx <= this.index && prnt.compareTo(right) < 0)) // need to bubble down parent
-                {
-                    if (lIdx <= this.index && prnt.compareTo(left) < 0) // swap left
-                    {
-                        swap(pIdx, lIdx);
-                        pIdx = lIdx;
-                    }
-                    else // swap right
-                    {
-                        swap(pIdx, rIdx);
-                        pIdx = rIdx;
-                    }
-
-                    lIdx = leftChildIndex(pIdx);
-                    rIdx = rightChildIndex(pIdx);
-
-                    left = getValueOrNull(lIdx);
-                    right = getValueOrNull(rIdx);
-                }
-            }
-        }
-
+        var max = heap.get(0);
+        
+        heap.set(0, heap.get(index));
+        heap.remove(index--);
+        sinkDown(0);
+        
         return max;
     }
+    
+    private void sinkDown(int pos) {
+    	
+        var greatestIdx = pos;
 
-	private T getValueOrNull(int idx) {
-		return idx <= this.index ? heap.get(idx) : null;
-	}
+        var lIdx = leftChildIndex(greatestIdx);
+        var rIdx = rightChildIndex(greatestIdx);
+        
+		if(lIdx < this.size() && heap.get(greatestIdx).compareTo(heap.get(lIdx)) < 0)		
+			greatestIdx = lIdx;
+		
+		if(rIdx < this.size() && heap.get(greatestIdx).compareTo(heap.get(rIdx)) < 0)		
+			greatestIdx = rIdx;
+		
+		if(greatestIdx != pos)
+		{
+            swap(pos, greatestIdx);
+            sinkDown(greatestIdx);
+		}
+    }
     
     // returns the max value in the heap which is stored in the root without removing it; T = O(1)
     public T getMax() {
@@ -135,4 +114,27 @@ public class MaxHeap<T extends Comparable<T>>
     private static int rightChildIndex(int parent) {
     	return (2 * parent) + 2;
     }
+
+	@Override
+	public Iterator<T> iterator() {
+		return new Iterator<T>() {
+
+			private int ptr = 0;	
+			
+			@Override
+			public boolean hasNext() {
+				return size() > 0 && this.ptr <= index ;
+			}
+		
+			@Override
+			public T next() {
+				return heap.get(ptr++);
+			}
+			
+			@Override 
+			public void remove(){
+				throw new UnsupportedOperationException();
+			}
+		};		
+	}
 }
